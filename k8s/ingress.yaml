@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: retail-ingress
+  annotations:
+    # AWS Load Balancer Controller annotations — creates an internet-facing ALB
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # Health check paths
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+    # Allow HTTP for local testing — in production add HTTPS listeners
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+spec:
+  rules:
+    - http:
+        paths:
+          # ── API traffic ──────────────────────────────────────────────────────
+          # /api/* is routed to the frontend Nginx pod, which then proxies
+          # internally to the backend service (stripping /api prefix).
+          # This single entry-point pattern keeps ALB simple.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: retail-frontend-svc
+                port:
+                  number: 80

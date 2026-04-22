@@ -1,0 +1,64 @@
+services:
+
+  # ── Spring Boot Backend ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./retail-springboot
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      # These override the fallback values in application.properties
+      - DB_URL=jdbc:mysql://db:3306/customerproductmgmtdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - DB_USER=root
+      - DB_PASS=root
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - retail-network
+
+  # ── React Frontend (Nginx) ───────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./retail-frontend
+      dockerfile: Dockerfile
+      args:
+        # VITE_API_URL is baked into the React bundle at build time.
+        VITE_API_URL: /api
+    environment:
+      # Nginx resolves backend by container name inside docker-compose network
+      - BACKEND_HOST=backend:8080
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - retail-network
+
+  # ── MySQL Database ───────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      # Must match the DB name used in database.sql and DB_URL above
+      - MYSQL_DATABASE=customerproductmgmtdb
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./retail-springboot/src/main/resources/database.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 20s
+      retries: 10
+    networks:
+      - retail-network
+
+networks:
+  retail-network:
+    driver: bridge
+
+volumes:
+  db-data:

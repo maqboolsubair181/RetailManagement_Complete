@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: retail-nginx-ingress
+  annotations:
+    # NGINX Ingress Controller annotations
+    # Disable SSL redirect for local testing if not using HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          # Route all traffic to the frontend Nginx pod
+          # The frontend Nginx pod will handle proxying /api/* requests to the backend service
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: retail-frontend-svc
+                port:
+                  number: 80

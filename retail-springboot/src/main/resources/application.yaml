@@ -1,0 +1,4 @@
+# This file is intentionally left empty.
+# All configuration has been moved to application.properties.
+# application.properties takes precedence; keeping this file empty
+# prevents any accidental override.
